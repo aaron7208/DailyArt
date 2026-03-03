@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<!-- 声明这是一个 HTML5 文档，告诉浏览器按照最新的 HTML 标准解析此页面 -->
+<html lang="zh-CN">
+<!-- 根元素：包裹整个网页内容。lang="zh-CN" 表示页面主要使用简体中文 -->
+<head>
+  <!-- 头部区域：存放页面的元信息和配置，不会直接显示在屏幕上 -->
+  <meta charset="UTF-8">
+  <!-- 设置字符编码为 UTF-8，确保中文能正确显示 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- 让页面在手机屏幕上按设备宽度显示，禁止用户缩放，实现移动端适配 -->
+  <meta name="theme-color" content="#1a1a1a">
+  <!-- 移动端浏览器地址栏和状态栏的背景色 -->
+  <title>每日古画</title>
+  <!-- 浏览器标签页上显示的标题 -->
+  <style>
+    /* ========== 以下为 CSS 样式，控制页面上各元素的 appearance 和 layout ========== */
+
+    /* 清除浏览器为各元素设置的默认内外边距，使布局从零开始 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    /* box-sizing: border-box 表示元素的宽度和高度包含内边距和边框，便于精确控制尺寸 */
+
+    /* 设置 HTML 和 body 占满整个视口高度，为全屏布局打基础 */
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow-x: hidden;
+    }
+    /* overflow-x: hidden 防止页面在横向上出现滚动条 */
+
+    /* 主体容器：采用 flex 纵向排列，占满整屏 */
+    body {
+      display: flex;
+      flex-direction: column;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    /* font-family 指定字体，优先使用系统自带的中文无衬线字体 */
+
+    /* 背景图容器：铺满整个屏幕，作为全屏背景 */
+    .background-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+    /* position: fixed 使元素固定在视口中，不随滚动移动 */
+    /* z-index: 0 让背景在最底层 */
+
+    /* 背景图片：使用 object-fit: cover 填满容器，保持比例，可能裁剪超出部分 */
+    .background-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background-color: #525252;
+    }
+    /* background-color 在网络差或图片未加载完成时显示深灰色，避免刺眼纯白 */
+    /* display: block 去除图片下方的默认空隙 */
+
+    /* 底部文字浮层容器：占屏幕底部三分之一区域 */
+    .overlay {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 33.33%;
+      min-height: 180px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 24px 20px 32px;
+      background-color: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.4s ease, opacity 0.4s ease;
+    }
+    /* rgba(0,0,0,0.45) 半透明黑色，0.45 为不透明度 */
+    /* backdrop-filter: blur 让浮层背后的背景产生模糊效果 */
+    /* -webkit-backdrop-filter 兼容部分旧版 Safari */
+    /* transition 使隐藏和显示时有平滑动画 */
+
+    /* 当浮层被隐藏时：向下移出屏幕并变透明 */
+    .overlay.hidden {
+      transform: translateY(100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+    /* translateY(100%) 表示向下移动自身高度的 100% */
+    /* opacity: 0 完全透明 */
+    /* pointer-events: none 使隐藏时点击事件穿透，不会挡住背景 */
+
+    /* 浮层内的文字区域，采用纵向排列 */
+    .overlay-content {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    /* gap: 8px 让子元素之间有 8 像素的垂直间距 */
+
+    /* 作品标题：大号加粗字体 */
+    .overlay-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.3;
+      letter-spacing: 0.5px;
+    }
+
+    /* 朝代与作者：较小字号，稍浅颜色 */
+    .overlay-meta {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.85);
+      letter-spacing: 0.3px;
+    }
+
+    /* 简短描述：两到三行，灰色字 */
+    .overlay-desc {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.75);
+      line-height: 1.5;
+      margin-top: 4px;
+    }
+  </style>
+  <link rel="manifest" href="./manifest.json">
+</head>
+<body>
+  <!-- 身体区域：这里的内容会显示在屏幕上 -->
+
+  <!-- 背景图容器：用于全屏展示古画图片 -->
+  <div class="background-container">
+    <!-- 图片的 src 由 JavaScript 根据日期动态填入，此处留空作为待渲染节点 -->
+    <img id="art-image" src="" alt="中国传统古画背景">
+  </div>
+
+  <!-- 底部文字浮层：显示作品标题、作者和描述，内容由 JavaScript 根据日期动态填入 -->
+  <div class="overlay" id="overlay">
+    <div class="overlay-content">
+      <!-- 作品标题，id 便于 JavaScript 获取并写入 -->
+      <h1 class="overlay-title" id="art-title"></h1>
+      <!-- 朝代与作者，id 便于 JavaScript 获取并写入 -->
+      <p class="overlay-meta" id="art-meta"></p>
+      <!-- 简短描述，id 便于 JavaScript 获取并写入 -->
+      <p class="overlay-desc" id="art-description"></p>
+    </div>
+  </div>
+
+  <script>
+    /* ========== 以下为 JavaScript 逻辑，控制页面的交互行为与数据渲染 ========== */
+
+    /*
+     * artworksData：古画数据数组，每条数据包含 date、title、author、dynasty、description、imageUrl
+     * 页面加载时会根据当前日期在数组中查找匹配项，并将对应内容渲染到页面上
+     */
+    var artworksData = [
+      {
+        date: "2026-03-03",
+        title: "千里江山图",
+        author: "王希孟",
+        dynasty: "北宋",
+        description: "此画以青绿山水为主调，描绘江河山峦，烟波浩渺。绢本设色，纵51.5厘米，横1191.5厘米，为中国十大传世名画之一。",
+        imageUrl: "https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=1080&q=80"
+      },
+      {
+        date: "2026-03-02",
+        title: "富春山居图",
+        author: "黄公望",
+        dynasty: "元代",
+        description: "描绘富春江两岸初秋景色，以长卷形式展现峰峦叠翠、松石挺秀。画风苍茫简远，意境空灵疏旷。",
+        imageUrl: "https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?auto=format&fit=crop&w=1080&q=80"
+      },
+      {
+        date: "2026-03-01",
+        title: "清明上河图",
+        author: "张择端",
+        dynasty: "北宋",
+        description: "描绘北宋都城汴京清明时节的繁荣景象，以长卷形式呈现城郭、市肆、桥梁、舟车与各色人物。",
+        imageUrl: "https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?auto=format&fit=crop&w=1080&q=80"
+      }
+    ];
+
+    /*
+     * 获取设备当前的系统日期，格式化为 "年-月-日" 的字符串（例如 "2026-03-03"）
+     * 用于在 artworksData 中查找与该日期匹配的古画数据
+     */
+    var today = new Date();
+    var year = today.getFullYear();
+    var month = today.getMonth() + 1;
+    var day = today.getDate();
+    if (month < 10) { month = "0" + month; }
+    if (day < 10) { day = "0" + day; }
+    var dateString = year + "-" + month + "-" + day;
+
+    /*
+     * 在 artworksData 数组中查找 date 字段与当前日期完全相同的项
+     * 若找到则使用该项，若未找到则使用数组中的第一条数据
+     */
+    var selectedArtwork = artworksData[0];
+    for (var i = 0; i < artworksData.length; i = i + 1) {
+      if (artworksData[i].date === dateString) {
+        selectedArtwork = artworksData[i];
+        break;
+      }
+    }
+
+    /* 获取 id 为 art-image 的图片元素，用于设置其图片地址 */
+    var artImage = document.getElementById("art-image");
+    /* 将选中数据的图片地址赋值给图片元素的 src 属性，浏览器会加载并显示该图片 */
+    artImage.src = selectedArtwork.imageUrl;
+
+    /* 获取 id 为 art-title 的元素，用于显示画作名称 */
+    var artTitle = document.getElementById("art-title");
+    /* 将选中数据的画作名称填入该元素，用户即可在页面上看到标题 */
+    artTitle.textContent = selectedArtwork.title;
+
+    /* 获取 id 为 art-meta 的元素，用于显示朝代与作者 */
+    var artMeta = document.getElementById("art-meta");
+    /* 将朝代、中间点、作者拼接成字符串（例如 "北宋 · 王希孟"），填入该元素 */
+    artMeta.textContent = selectedArtwork.dynasty + " · " + selectedArtwork.author;
+
+    /* 获取 id 为 art-description 的元素，用于显示鉴赏描述 */
+    var artDescription = document.getElementById("art-description");
+    /* 将选中数据的描述文字填入该元素，用户即可在页面上看到描述 */
+    artDescription.textContent = selectedArtwork.description;
+
+    /* 获取 id 为 overlay 的元素，即底部文字浮层，用于后续的点击切换显示和隐藏 */
+    var overlay = document.getElementById("overlay");
+
+    /* 给整个页面 body 添加点击事件监听：用户点击屏幕任意位置时执行下面的函数 */
+    document.body.addEventListener("click", function () {
+      /*
+       * classList.toggle 的作用：
+       * 若元素当前没有 "hidden" 这个类名，则添加它；
+       * 若元素当前已有 "hidden" 这个类名，则移除它。
+       * 添加 "hidden" 时浮层会隐藏，移除时会显示。
+       */
+      overlay.classList.toggle("hidden");
+    });
+
+    /*
+     * 以下为 Service Worker 注册逻辑：在浏览器后台启用离线缓存能力
+     * 页面需通过 HTTP 或 HTTPS 协议访问（如 http://localhost 或部署后的网址），file:// 打开时无法使用
+     */
+    /* 判断当前浏览器是否支持 Service Worker 功能 */
+    if ("serviceWorker" in navigator) {
+      /*
+       * window.addEventListener("load", ...) 在页面及其所有资源（图片、脚本等）全部加载完成后执行
+       * 将注册逻辑延后至此，可避免与页面主逻辑争夺网络和计算资源
+       */
+      window.addEventListener("load", function () {
+        /*
+         * navigator.serviceWorker.register 向浏览器注册指定的 Service Worker 脚本文件
+         * 参数为 sw.js 相对于当前页面的路径，返回一个 Promise
+         */
+        navigator.serviceWorker.register("sw.js").then(function (registration) {
+          /* 注册成功时，registration 为 Service Worker 的注册信息，此处不执行额外操作 */
+        }).catch(function (error) {
+          /* 注册失败时，error 包含错误信息，此处不执行额外操作 */
+        });
+      });
+    }
+  </script>
+</body>
+</html>
